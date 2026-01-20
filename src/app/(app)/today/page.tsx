@@ -6,6 +6,7 @@ import { useAnchors } from '@/hooks/use-anchors';
 import { useToastActions } from '@/hooks/use-toast';
 import { TaskList } from '@/components/tasks/task-list';
 import { FilterBar } from '@/components/anchors/filter-bar';
+import { isToday } from '@/lib/utils/date';
 
 export default function TodayPage() {
   const { tasks, loading, completeTask } = useTasks();
@@ -29,14 +30,18 @@ export default function TodayPage() {
   const todayTasks = tasks.filter((task) => {
     if (task.status === 'archived') return false;
     
+    if (task.status === 'completed' && !isToday(task.completedAt)) {
+      return false;
+    }
+    
     if (task.dueDate) {
       const today = new Date();
       const dueDate = new Date(task.dueDate);
-      const isToday =
+      const isDueToday =
         dueDate.getFullYear() === today.getFullYear() &&
         dueDate.getMonth() === today.getMonth() &&
         dueDate.getDate() === today.getDate();
-      if (!isToday) return false;
+      if (!isDueToday) return false;
     }
 
     if (selectedAnchorId) {

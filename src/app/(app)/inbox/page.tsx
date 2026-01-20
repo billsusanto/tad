@@ -7,6 +7,7 @@ import { useAnchors } from '@/hooks/use-anchors';
 import { useToastActions } from '@/hooks/use-toast';
 import { TaskList } from '@/components/tasks/task-list';
 import { FilterBar } from '@/components/anchors/filter-bar';
+import { isToday } from '@/lib/utils/date';
 
 export default function InboxPage() {
   const { tasks, loading, completeTask } = useTasks();
@@ -30,6 +31,10 @@ export default function InboxPage() {
   const inboxTasks = tasks.filter((task) => {
     if (task.dueDate) return false;
     if (task.status === 'archived') return false;
+    
+    if (task.status === 'completed' && !isToday(task.completedAt)) {
+      return false;
+    }
 
     if (selectedAnchorId) {
       return task.anchors?.some((a) => a.id === selectedAnchorId);
