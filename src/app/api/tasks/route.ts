@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, priority, dueDate, dueTime, timeEstimate, anchorIds } = body;
+    const { title, description, priority, dueDate, dueTime, timeEstimate, anchorIds, scheduledStart, scheduledEnd, isFixed } = body;
 
     if (!title || typeof title !== 'string') {
       return NextResponse.json(
@@ -92,6 +92,9 @@ export async function POST(request: NextRequest) {
         dueDate: dueDate ? new Date(dueDate) : null,
         dueTime: dueTime || null,
         timeEstimate: timeEstimate || null,
+        scheduledStart: scheduledStart || null,
+        scheduledEnd: scheduledEnd || null,
+        isFixed: isFixed ?? false,
       })
       .returning();
 
