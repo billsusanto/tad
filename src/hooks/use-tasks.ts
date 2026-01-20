@@ -1,22 +1,22 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import type { Task, CreateTaskInput, UpdateTaskInput } from '@/types';
+import type { TaskWithAnchors, CreateTaskInput, UpdateTaskInput } from '@/types';
 import { taskEvents } from '@/lib/events';
 
 interface UseTasksReturn {
-  tasks: Task[];
+  tasks: TaskWithAnchors[];
   loading: boolean;
   error: string | null;
-  createTask: (input: CreateTaskInput) => Promise<Task | null>;
-  updateTask: (id: string, input: UpdateTaskInput) => Promise<Task | null>;
+  createTask: (input: CreateTaskInput) => Promise<TaskWithAnchors | null>;
+  updateTask: (id: string, input: UpdateTaskInput) => Promise<TaskWithAnchors | null>;
   deleteTask: (id: string) => Promise<boolean>;
-  completeTask: (id: string) => Promise<Task | null>;
+  completeTask: (id: string) => Promise<TaskWithAnchors | null>;
   refetch: () => Promise<void>;
 }
 
 export function useTasks(): UseTasksReturn {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<TaskWithAnchors[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,7 +43,7 @@ export function useTasks(): UseTasksReturn {
     return unsubscribe;
   }, [fetchTasks]);
 
-  const createTask = useCallback(async (input: CreateTaskInput): Promise<Task | null> => {
+  const createTask = useCallback(async (input: CreateTaskInput): Promise<TaskWithAnchors | null> => {
     try {
       const response = await fetch('/api/tasks', {
         method: 'POST',
@@ -62,7 +62,7 @@ export function useTasks(): UseTasksReturn {
     }
   }, []);
 
-  const updateTask = useCallback(async (id: string, input: UpdateTaskInput): Promise<Task | null> => {
+  const updateTask = useCallback(async (id: string, input: UpdateTaskInput): Promise<TaskWithAnchors | null> => {
     try {
       const response = await fetch(`/api/tasks/${id}`, {
         method: 'PATCH',
@@ -73,7 +73,7 @@ export function useTasks(): UseTasksReturn {
         throw new Error('Failed to update task');
       }
       const task = await response.json();
-      setTasks((prev) => prev.map((t) => (t.id === id ? task : t)));
+      setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...task } : t)));
       return task;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update task');
@@ -97,7 +97,7 @@ export function useTasks(): UseTasksReturn {
     }
   }, []);
 
-  const completeTask = useCallback(async (id: string): Promise<Task | null> => {
+  const completeTask = useCallback(async (id: string): Promise<TaskWithAnchors | null> => {
     const task = tasks.find((t) => t.id === id);
     if (!task) return null;
 

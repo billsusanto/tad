@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { getDb } from '@/lib/db';
-import { tasks, streaks } from '@/lib/db/schema';
-import { eq, desc, and, gte, lt } from 'drizzle-orm';
+import { tasks, streaks, taskAnchors, anchors } from '@/lib/db/schema';
+import { eq, desc, and, gte, lt, inArray } from 'drizzle-orm';
 import { getTodayUTC, addDaysUTC } from '@/lib/utils/date';
 
 export async function GET() {
@@ -17,9 +17,44 @@ export async function GET() {
       .select()
       .from(tasks)
       .where(eq(tasks.userId, session.user.id))
-      .orderBy(desc(tasks.createdAt));
+      .orderBy(tasks.priority, desc(tasks.createdAt));
 
-    return NextResponse.json(userTasks);
+    const taskIds = userTasks.map((t) => t.id);
+    
+    const taskAnchorMap: Record<string, { id: string; name: string; icon: string; color: string }[]> = {};
+    
+    if (taskIds.length > 0) {
+      const taskAnchorRows = await db
+        .select({
+          taskId: taskAnchors.taskId,
+          anchorId: anchors.id,
+          name: anchors.name,
+          icon: anchors.icon,
+          color: anchors.color,
+        })
+        .from(taskAnchors)
+        .innerJoin(anchors, eq(taskAnchors.anchorId, anchors.id))
+        .where(inArray(taskAnchors.taskId, taskIds));
+
+      for (const row of taskAnchorRows) {
+        if (!taskAnchorMap[row.taskId]) {
+          taskAnchorMap[row.taskId] = [];
+        }
+        taskAnchorMap[row.taskId].push({
+          id: row.anchorId,
+          name: row.name,
+          icon: row.icon,
+          color: row.color,
+        });
+      }
+    }
+
+    const tasksWithAnchors = userTasks.map((task) => ({
+      ...task,
+      anchors: taskAnchorMap[task.id] || [],
+    }));
+
+    return NextResponse.json(tasksWithAnchors);
   } catch (error) {
     console.error('Failed to fetch tasks:', error);
     return NextResponse.json(
@@ -37,7 +72,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, priority, dueDate, dueTime, timeEstimate } = body;
+    const { title, description, priority, dueDate, dueTime, timeEstimate, anchorIds } = body;
 
     if (!title || typeof title !== 'string') {
       return NextResponse.json(
@@ -59,6 +94,29 @@ export async function POST(request: NextRequest) {
         timeEstimate: timeEstimate || null,
       })
       .returning();
+
+    let taskAnchorList: { id: string; name: string; icon: string; color: string }[] = [];
+
+    if (anchorIds && Array.isArray(anchorIds) && anchorIds.length > 0) {
+      await db.insert(taskAnchors).values(
+        anchorIds.map((anchorId: string) => ({
+          taskId: newTask.id,
+          anchorId,
+        }))
+      );
+
+      const anchorRows = await db
+        .select()
+        .from(anchors)
+        .where(inArray(anchors.id, anchorIds));
+
+      taskAnchorList = anchorRows.map((a) => ({
+        id: a.id,
+        name: a.name,
+        icon: a.icon,
+        color: a.color,
+      }));
+    }
 
     const today = getTodayUTC();
     const tomorrow = addDaysUTC(today, 1);
@@ -88,7 +146,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json(newTask, { status: 201 });
+    return NextResponse.json({ ...newTask, anchors: taskAnchorList }, { status: 201 });
   } catch (error) {
     console.error('Failed to create task:', error);
     return NextResponse.json(

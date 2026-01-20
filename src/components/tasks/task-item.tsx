@@ -2,10 +2,10 @@
 
 import { Clock } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
-import type { Task } from '@/types';
+import type { TaskWithAnchors } from '@/types';
 
 interface TaskItemProps {
-  task: Task;
+  task: TaskWithAnchors;
   onToggle: (id: string) => void;
 }
 
@@ -16,8 +16,16 @@ const timeEstimateLabels: Record<number, string> = {
   120: '2h+',
 };
 
+const priorityConfig: Record<number, { label: string; color: string }> = {
+  1: { label: 'P1', color: '#ef4444' },
+  2: { label: 'P2', color: '#f97316' },
+  3: { label: 'P3', color: '#3b82f6' },
+  4: { label: 'P4', color: '#6b7280' },
+};
+
 export function TaskItem({ task, onToggle }: TaskItemProps) {
   const isCompleted = task.status === 'completed';
+  const hasMetadata = task.timeEstimate || task.dueTime || task.anchors?.length > 0 || task.priority < 4;
 
   return (
     <div
@@ -69,8 +77,29 @@ export function TaskItem({ task, onToggle }: TaskItemProps) {
           {task.title}
         </p>
         
-        {(task.timeEstimate || task.dueTime) && (
-          <div className="flex items-center gap-2 mt-1.5">
+        {hasMetadata && (
+          <div className="flex flex-wrap items-center gap-2 mt-1.5">
+            {task.anchors?.map((anchor) => (
+              <span
+                key={anchor.id}
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs"
+                style={{ backgroundColor: anchor.color + '20', color: anchor.color }}
+              >
+                <span>{anchor.icon}</span>
+                <span className="font-medium">{anchor.name}</span>
+              </span>
+            ))}
+            {task.priority < 4 && (
+              <span
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold"
+                style={{ 
+                  backgroundColor: priorityConfig[task.priority].color + '20',
+                  color: priorityConfig[task.priority].color 
+                }}
+              >
+                {priorityConfig[task.priority].label}
+              </span>
+            )}
             {task.timeEstimate && (
               <span className="inline-flex items-center gap-1 text-xs text-text-muted">
                 <Clock className="h-3 w-3" />

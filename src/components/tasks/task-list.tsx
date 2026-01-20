@@ -4,15 +4,25 @@ import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { TaskItem } from './task-item';
 import { cn } from '@/lib/utils/cn';
-import type { Task } from '@/types';
+import type { TaskWithAnchors } from '@/types';
 
 interface TaskListProps {
-  tasks: Task[];
+  tasks: TaskWithAnchors[];
   onToggle: (id: string) => void;
   loading?: boolean;
+  emptyIcon?: string;
+  emptyTitle?: string;
+  emptyMessage?: string;
 }
 
-export function TaskList({ tasks, onToggle, loading }: TaskListProps) {
+export function TaskList({
+  tasks,
+  onToggle,
+  loading,
+  emptyIcon = '🎯',
+  emptyTitle = 'No tasks yet',
+  emptyMessage = 'Tap the + button to add your first task',
+}: TaskListProps) {
   const [showCompleted, setShowCompleted] = useState(false);
 
   const pendingTasks = tasks.filter((t) => t.status === 'pending');
@@ -35,13 +45,13 @@ export function TaskList({ tasks, onToggle, loading }: TaskListProps) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <div className="h-16 w-16 rounded-full bg-bg-tertiary flex items-center justify-center mb-4">
-          <span className="text-2xl">🎯</span>
+          <span className="text-2xl">{emptyIcon}</span>
         </div>
         <h3 className="text-lg font-medium text-text-primary mb-1">
-          No tasks yet
+          {emptyTitle}
         </h3>
         <p className="text-sm text-text-secondary">
-          Tap the + button to add your first task
+          {emptyMessage}
         </p>
       </div>
     );

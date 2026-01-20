@@ -11,8 +11,15 @@ export type {
 
 export type TaskStatus = 'pending' | 'completed' | 'archived';
 
+export interface AnchorInfo {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+}
+
 export type TaskWithAnchors = Task & {
-  anchors: Anchor[];
+  anchors: AnchorInfo[];
 };
 
 export interface CreateTaskInput {
@@ -33,6 +40,7 @@ export interface UpdateTaskInput {
   dueDate?: Date | null;
   dueTime?: string | null;
   timeEstimate?: number | null;
+  anchorIds?: string[];
 }
 
 declare module 'next-auth' {
