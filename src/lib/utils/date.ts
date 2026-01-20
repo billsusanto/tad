@@ -31,3 +31,14 @@ export function getDayOfWeekUTC(date: Date): number {
   const day = date.getUTCDay();
   return day === 0 ? 6 : day - 1;
 }
+
+export function isToday(date: Date | string | null): boolean {
+  if (!date) return false;
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const today = new Date();
+  return (
+    d.getFullYear() === today.getFullYear() &&
+    d.getMonth() === today.getMonth() &&
+    d.getDate() === today.getDate()
+  );
+}
