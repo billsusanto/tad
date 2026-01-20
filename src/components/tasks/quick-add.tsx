@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AnchorSelector } from '@/components/anchors/anchor-selector';
+import { useToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils/cn';
 import { taskEvents } from '@/lib/events';
 import type { Anchor } from '@/types';
@@ -39,6 +40,7 @@ export function QuickAdd({ open, onClose, onAdd, anchors, anchorsLoading }: Quic
   const [selectedAnchorIds, setSelectedAnchorIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { addToast } = useToast();
 
   useEffect(() => {
     if (open) {
@@ -76,7 +78,12 @@ export function QuickAdd({ open, onClose, onAdd, anchors, anchorsLoading }: Quic
         onClose();
         taskEvents.emit();
         onAdd?.();
+        addToast('success', 'Task created');
+      } else {
+        addToast('error', 'Failed to create task');
       }
+    } catch {
+      addToast('error', 'Failed to create task');
     } finally {
       setLoading(false);
     }

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Plus } from 'lucide-react';
 import { TaskItem } from './task-item';
+import { TaskSkeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils/cn';
 import type { TaskWithAnchors } from '@/types';
 
@@ -13,6 +14,8 @@ interface TaskListProps {
   emptyIcon?: string;
   emptyTitle?: string;
   emptyMessage?: string;
+  emptyAction?: string;
+  onEmptyAction?: () => void;
 }
 
 export function TaskList({
@@ -22,6 +25,8 @@ export function TaskList({
   emptyIcon = '🎯',
   emptyTitle = 'No tasks yet',
   emptyMessage = 'Tap the + button to add your first task',
+  emptyAction,
+  onEmptyAction,
 }: TaskListProps) {
   const [showCompleted, setShowCompleted] = useState(false);
 
@@ -29,16 +34,7 @@ export function TaskList({
   const completedTasks = tasks.filter((t) => t.status === 'completed');
 
   if (loading) {
-    return (
-      <div className="space-y-3">
-        {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="h-16 rounded-xl bg-bg-secondary animate-pulse"
-          />
-        ))}
-      </div>
-    );
+    return <TaskSkeleton />;
   }
 
   if (tasks.length === 0) {
@@ -50,9 +46,18 @@ export function TaskList({
         <h3 className="text-lg font-medium text-text-primary mb-1">
           {emptyTitle}
         </h3>
-        <p className="text-sm text-text-secondary">
+        <p className="text-sm text-text-secondary max-w-xs">
           {emptyMessage}
         </p>
+        {emptyAction && onEmptyAction && (
+          <button
+            onClick={onEmptyAction}
+            className="mt-4 flex items-center gap-2 px-4 py-2 text-sm font-medium text-brand-primary hover:bg-brand-primary/10 rounded-lg transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            {emptyAction}
+          </button>
+        )}
       </div>
     );
   }

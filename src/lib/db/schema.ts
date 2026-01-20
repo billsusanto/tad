@@ -154,6 +154,7 @@ export const userSettings = pgTable('user_settings', {
   theme: text('theme').default('github').notNull(),
   notificationsEnabled: boolean('notifications_enabled').default(true),
   timezone: text('timezone').default('UTC').notNull(),
+  hasCompletedOnboarding: boolean('has_completed_onboarding').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

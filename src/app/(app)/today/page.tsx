@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useTasks } from '@/hooks/use-tasks';
 import { useAnchors } from '@/hooks/use-anchors';
+import { useToastActions } from '@/hooks/use-toast';
 import { TaskList } from '@/components/tasks/task-list';
 import { FilterBar } from '@/components/anchors/filter-bar';
 
@@ -10,6 +11,20 @@ export default function TodayPage() {
   const { tasks, loading, completeTask } = useTasks();
   const { anchors, loading: anchorsLoading } = useAnchors();
   const [selectedAnchorId, setSelectedAnchorId] = useState<string | null>(null);
+  const toast = useToastActions();
+
+  const handleToggle = useCallback(async (id: string) => {
+    const task = tasks.find((t) => t.id === id);
+    const wasCompleted = task?.status === 'completed';
+    const result = await completeTask(id);
+    if (result) {
+      if (!wasCompleted) {
+        toast.success('Task completed!');
+      }
+    } else {
+      toast.error('Failed to update task');
+    }
+  }, [tasks, completeTask, toast]);
 
   const todayTasks = tasks.filter((task) => {
     if (task.status === 'archived') return false;
@@ -55,8 +70,11 @@ export default function TodayPage() {
 
       <TaskList
         tasks={todayTasks}
-        onToggle={completeTask}
+        onToggle={handleToggle}
         loading={loading}
+        emptyIcon="🌟"
+        emptyTitle="Your slate is clean!"
+        emptyMessage="No tasks for today. Add something you want to actually do."
       />
     </div>
   );

@@ -2,30 +2,9 @@
 
 import { useStreak } from '@/hooks/use-streak';
 import { ContributionGraph, StreakCounter, WeeklyProgress } from '@/components/streaks';
+import { StatsSkeleton } from '@/components/ui/skeleton';
+import { ErrorState } from '@/components/ui/error-state';
 import type { ContributionDay, WeeklyDayStatus } from '@/lib/utils/streak';
-
-function StatsLoading() {
-  return (
-    <div className="p-4 space-y-4 animate-pulse">
-      <div className="h-24 bg-bg-secondary rounded-lg" />
-      <div className="h-32 bg-bg-secondary rounded-lg" />
-      <div className="h-48 bg-bg-secondary rounded-lg" />
-    </div>
-  );
-}
-
-function StatsError({ message }: { message: string }) {
-  return (
-    <div className="p-4">
-      <div className="p-4 bg-bg-secondary rounded-lg border border-error/30 text-center">
-        <p className="text-error">{message}</p>
-        <p className="text-text-secondary text-sm mt-2">
-          Please try refreshing the page.
-        </p>
-      </div>
-    </div>
-  );
-}
 
 function parseWeeklyProgress(data: { date: string; completed: boolean; isToday: boolean; tasksCount: number }[]): WeeklyDayStatus[] {
   return data.map((day) => ({
@@ -42,14 +21,28 @@ function parseContributionData(data: { date: string; count: number; level: 0 | 1
 }
 
 export default function StatsPage() {
-  const { data, loading, error, theme, setTheme } = useStreak();
+  const { data, loading, error, theme, setTheme, refetch } = useStreak();
 
   if (loading) {
-    return <StatsLoading />;
+    return (
+      <div className="p-4 max-w-2xl mx-auto">
+        <h1 className="text-2xl font-bold text-text-primary mb-4">Statistics</h1>
+        <StatsSkeleton />
+      </div>
+    );
   }
 
   if (error || !data) {
-    return <StatsError message={error || 'Failed to load stats'} />;
+    return (
+      <div className="p-4 max-w-2xl mx-auto">
+        <h1 className="text-2xl font-bold text-text-primary mb-4">Statistics</h1>
+        <ErrorState
+          title="Failed to load stats"
+          message={error || 'We couldn\'t load your statistics. Please try again.'}
+          onRetry={refetch}
+        />
+      </div>
+    );
   }
 
   const weeklyProgress = parseWeeklyProgress(data.weeklyProgress);

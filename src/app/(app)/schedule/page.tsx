@@ -148,8 +148,13 @@ export default function SchedulePage() {
 
       <div className="flex-1 overflow-auto">
         {loading ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-pulse text-text-muted">Loading schedule...</div>
+          <div className="space-y-2 px-4 py-4">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="flex gap-2">
+                <div className="h-4 w-12 bg-bg-tertiary rounded animate-pulse flex-shrink-0" />
+                <div className="h-12 flex-1 bg-bg-secondary rounded-lg animate-pulse" />
+              </div>
+            ))}
           </div>
         ) : (
           <div className="px-2 py-4">

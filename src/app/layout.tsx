@@ -16,6 +16,16 @@ export const metadata: Metadata = {
   title: 'TAD - To Actually Do',
   description: 'A humane task manager that celebrates your progress, not your failures.',
   keywords: ['tasks', 'productivity', 'habits', 'streak', 'todo'],
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'TAD',
+  },
+  icons: {
+    icon: '/icons/icon.svg',
+    apple: '/icons/icon.svg',
+  },
 };
 
 export const viewport: Viewport = {
