@@ -30,6 +30,9 @@ export interface CreateTaskInput {
   dueTime?: string;
   timeEstimate?: number;
   anchorIds?: string[];
+  scheduledStart?: string;
+  scheduledEnd?: string;
+  isFixed?: boolean;
 }
 
 export interface UpdateTaskInput {
@@ -41,6 +44,15 @@ export interface UpdateTaskInput {
   dueTime?: string | null;
   timeEstimate?: number | null;
   anchorIds?: string[];
+  scheduledStart?: string | null;
+  scheduledEnd?: string | null;
+  isFixed?: boolean;
+}
+
+export interface ScheduledTask extends TaskWithAnchors {
+  scheduledStart: string;
+  scheduledEnd: string;
+  isFixed: boolean;
 }
 
 declare module 'next-auth' {

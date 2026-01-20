@@ -81,7 +81,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
     const body = await request.json();
-    const { title, description, status, priority, dueDate, dueTime, timeEstimate } = body;
+    const { title, description, status, priority, dueDate, dueTime, timeEstimate, scheduledStart, scheduledEnd, isFixed } = body;
 
     const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
@@ -103,6 +103,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
     if (dueTime !== undefined) updateData.dueTime = dueTime;
     if (timeEstimate !== undefined) updateData.timeEstimate = timeEstimate;
+    if (scheduledStart !== undefined) updateData.scheduledStart = scheduledStart;
+    if (scheduledEnd !== undefined) updateData.scheduledEnd = scheduledEnd;
+    if (isFixed !== undefined) updateData.isFixed = isFixed;
 
     const db = getDb();
     
