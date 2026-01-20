@@ -1,8 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { getDb } from '@/lib/db';
-import { tasks } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { tasks, streaks } from '@/lib/db/schema';
+import { eq, and, gte, lt } from 'drizzle-orm';
+import { getTodayUTC, addDaysUTC } from '@/lib/utils/date';
+
+async function updateStreakRecord(userId: string, completedIncrement: number) {
+  const db = getDb();
+  const today = getTodayUTC();
+  const tomorrow = addDaysUTC(today, 1);
+
+  const [existingStreak] = await db
+    .select()
+    .from(streaks)
+    .where(and(
+      eq(streaks.userId, userId), 
+      gte(streaks.date, today),
+      lt(streaks.date, tomorrow)
+    ))
+    .limit(1);
+
+  if (existingStreak) {
+    const newCompleted = Math.max(0, existingStreak.tasksCompleted + completedIncrement);
+    await db
+      .update(streaks)
+      .set({
+        tasksCompleted: newCompleted,
+        goalMet: newCompleted > 0,
+      })
+      .where(eq(streaks.id, existingStreak.id));
+  } else if (completedIncrement > 0) {
+    await db.insert(streaks).values({
+      userId,
+      date: today,
+      tasksCompleted: completedIncrement,
+      totalTasks: 1,
+      goalMet: true,
+    });
+  }
+}
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -69,14 +105,28 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (timeEstimate !== undefined) updateData.timeEstimate = timeEstimate;
 
     const db = getDb();
+    
+    const [existingTask] = await db
+      .select()
+      .from(tasks)
+      .where(and(eq(tasks.id, id), eq(tasks.userId, session.user.id)));
+
+    if (!existingTask) {
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
     const [updatedTask] = await db
       .update(tasks)
       .set(updateData)
       .where(and(eq(tasks.id, id), eq(tasks.userId, session.user.id)))
       .returning();
 
-    if (!updatedTask) {
-      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    if (status !== undefined && status !== existingTask.status) {
+      if (status === 'completed' && existingTask.status !== 'completed') {
+        await updateStreakRecord(session.user.id, 1);
+      } else if (existingTask.status === 'completed' && status !== 'completed') {
+        await updateStreakRecord(session.user.id, -1);
+      }
     }
 
     return NextResponse.json(updatedTask);

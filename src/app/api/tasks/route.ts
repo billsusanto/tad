@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { getDb } from '@/lib/db';
-import { tasks } from '@/lib/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { tasks, streaks } from '@/lib/db/schema';
+import { eq, desc, and, gte, lt } from 'drizzle-orm';
+import { getTodayUTC, addDaysUTC } from '@/lib/utils/date';
 
 export async function GET() {
   try {
@@ -58,6 +59,34 @@ export async function POST(request: NextRequest) {
         timeEstimate: timeEstimate || null,
       })
       .returning();
+
+    const today = getTodayUTC();
+    const tomorrow = addDaysUTC(today, 1);
+    
+    const [existingStreak] = await db
+      .select()
+      .from(streaks)
+      .where(and(
+        eq(streaks.userId, session.user.id), 
+        gte(streaks.date, today),
+        lt(streaks.date, tomorrow)
+      ))
+      .limit(1);
+
+    if (existingStreak) {
+      await db
+        .update(streaks)
+        .set({ totalTasks: existingStreak.totalTasks + 1 })
+        .where(eq(streaks.id, existingStreak.id));
+    } else {
+      await db.insert(streaks).values({
+        userId: session.user.id,
+        date: today,
+        tasksCompleted: 0,
+        totalTasks: 1,
+        goalMet: false,
+      });
+    }
 
     return NextResponse.json(newTask, { status: 201 });
   } catch (error) {
