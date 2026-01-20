@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import type { Task, CreateTaskInput, UpdateTaskInput } from '@/types';
+import { taskEvents } from '@/lib/events';
 
 interface UseTasksReturn {
   tasks: Task[];
@@ -38,6 +39,8 @@ export function useTasks(): UseTasksReturn {
 
   useEffect(() => {
     fetchTasks();
+    const unsubscribe = taskEvents.subscribe(fetchTasks);
+    return unsubscribe;
   }, [fetchTasks]);
 
   const createTask = useCallback(async (input: CreateTaskInput): Promise<Task | null> => {

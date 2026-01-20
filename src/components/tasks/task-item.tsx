@@ -31,26 +31,32 @@ export function TaskItem({ task, onToggle }: TaskItemProps) {
       <button
         onClick={() => onToggle(task.id)}
         className={cn(
-          'flex-shrink-0 h-5 w-5 mt-0.5 rounded border-2 transition-all duration-150',
+          'flex-shrink-0 h-11 w-11 -ml-3 -my-3 rounded-lg transition-all duration-150',
           'flex items-center justify-center',
-          'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-secondary',
-          isCompleted
-            ? 'bg-brand-primary border-brand-primary'
-            : 'bg-transparent border-border-default hover:border-brand-primary/50'
+          'focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg-secondary'
         )}
         aria-label={isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
       >
-        {isCompleted && (
-          <svg
-            className="h-3 w-3 text-bg-primary"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={3}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
-        )}
+        <span
+          className={cn(
+            'h-5 w-5 rounded border-2 flex items-center justify-center transition-all duration-150',
+            isCompleted
+              ? 'bg-brand-primary border-brand-primary'
+              : 'bg-transparent border-border-default group-hover:border-brand-primary/50'
+          )}
+        >
+          {isCompleted && (
+            <svg
+              className="h-3 w-3 text-bg-primary"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={3}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+        </span>
       </button>
 
       <div className="flex-1 min-w-0">

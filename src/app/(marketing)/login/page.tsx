@@ -54,11 +54,36 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-4 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30">
+            <Button
+              variant="secondary"
+              size="lg"
+              className="w-full justify-center border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/20"
+              onClick={() => signIn('dev-login', { email: 'dev@tad.local', callbackUrl: '/today' })}
+            >
+              <DevIcon className="h-5 w-5" />
+              Dev Login (Testing Only)
+            </Button>
+            <p className="mt-2 text-xs text-yellow-500/70 text-center">
+              Development mode only - bypasses OAuth
+            </p>
+          </div>
+        )}
+
         <p className="mt-6 text-center text-xs text-text-muted">
           By continuing, you agree to our Terms of Service and Privacy Policy.
         </p>
       </div>
     </div>
+  );
+}
+
+function DevIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+    </svg>
   );
 }
 
