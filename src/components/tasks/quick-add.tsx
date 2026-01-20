@@ -1,17 +1,21 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Calendar, Tag } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AnchorSelector } from '@/components/anchors/anchor-selector';
 import { cn } from '@/lib/utils/cn';
 import { taskEvents } from '@/lib/events';
+import type { Anchor } from '@/types';
 
 interface QuickAddProps {
   open: boolean;
   onClose: () => void;
   onAdd?: () => void;
+  anchors: Anchor[];
+  anchorsLoading?: boolean;
 }
 
 const timeOptions = [
@@ -21,9 +25,18 @@ const timeOptions = [
   { value: 120, label: '2h+' },
 ];
 
-export function QuickAdd({ open, onClose, onAdd }: QuickAddProps) {
+const priorityOptions = [
+  { value: 1, label: 'P1', color: '#ef4444' },
+  { value: 2, label: 'P2', color: '#f97316' },
+  { value: 3, label: 'P3', color: '#3b82f6' },
+  { value: 4, label: 'P4', color: '#6b7280' },
+];
+
+export function QuickAdd({ open, onClose, onAdd, anchors, anchorsLoading }: QuickAddProps) {
   const [title, setTitle] = useState('');
   const [timeEstimate, setTimeEstimate] = useState<number | null>(null);
+  const [priority, setPriority] = useState<number>(4);
+  const [selectedAnchorIds, setSelectedAnchorIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -33,6 +46,8 @@ export function QuickAdd({ open, onClose, onAdd }: QuickAddProps) {
     } else {
       setTitle('');
       setTimeEstimate(null);
+      setPriority(4);
+      setSelectedAnchorIds([]);
     }
   }, [open]);
 
@@ -48,12 +63,16 @@ export function QuickAdd({ open, onClose, onAdd }: QuickAddProps) {
         body: JSON.stringify({
           title: title.trim(),
           timeEstimate,
+          priority,
+          anchorIds: selectedAnchorIds.length > 0 ? selectedAnchorIds : undefined,
         }),
       });
 
       if (response.ok) {
         setTitle('');
         setTimeEstimate(null);
+        setPriority(4);
+        setSelectedAnchorIds([]);
         onClose();
         taskEvents.emit();
         onAdd?.();
@@ -81,6 +100,7 @@ export function QuickAdd({ open, onClose, onAdd }: QuickAddProps) {
 
         <div className="flex flex-wrap gap-2">
           <QuickButton icon={Calendar} label="Due" disabled />
+          
           <div className="flex gap-1">
             {timeOptions.map((option) => (
               <button
@@ -100,7 +120,39 @@ export function QuickAdd({ open, onClose, onAdd }: QuickAddProps) {
               </button>
             ))}
           </div>
-          <QuickButton icon={Tag} label="Tag" disabled />
+          
+          <AnchorSelector
+            anchors={anchors}
+            selectedIds={selectedAnchorIds}
+            onChange={setSelectedAnchorIds}
+            loading={anchorsLoading}
+          />
+        </div>
+
+        <div>
+          <p className="text-xs text-text-muted mb-2">Priority</p>
+          <div className="flex gap-1">
+            {priorityOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setPriority(option.value)}
+                className={cn(
+                  'inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors',
+                  priority === option.value
+                    ? 'text-white'
+                    : 'bg-bg-tertiary text-text-secondary hover:text-text-primary'
+                )}
+                style={
+                  priority === option.value
+                    ? { backgroundColor: option.color }
+                    : undefined
+                }
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex gap-3 pt-2">

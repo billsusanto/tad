@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ClipboardList, Calendar, BarChart3, User, Plus } from 'lucide-react';
+import { ClipboardList, Inbox, BarChart3, User, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 interface NavItem {
@@ -13,7 +13,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: '/today', label: 'Today', icon: ClipboardList },
-  { href: '/schedule', label: 'Schedule', icon: Calendar },
+  { href: '/inbox', label: 'Inbox', icon: Inbox },
   { href: '/stats', label: 'Stats', icon: BarChart3 },
   { href: '/profile', label: 'Profile', icon: User },
 ];

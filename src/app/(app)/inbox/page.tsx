@@ -1,28 +1,20 @@
 'use client';
 
 import { useState } from 'react';
+import { Inbox } from 'lucide-react';
 import { useTasks } from '@/hooks/use-tasks';
 import { useAnchors } from '@/hooks/use-anchors';
 import { TaskList } from '@/components/tasks/task-list';
 import { FilterBar } from '@/components/anchors/filter-bar';
 
-export default function TodayPage() {
+export default function InboxPage() {
   const { tasks, loading, completeTask } = useTasks();
   const { anchors, loading: anchorsLoading } = useAnchors();
   const [selectedAnchorId, setSelectedAnchorId] = useState<string | null>(null);
 
-  const todayTasks = tasks.filter((task) => {
+  const inboxTasks = tasks.filter((task) => {
+    if (task.dueDate) return false;
     if (task.status === 'archived') return false;
-    
-    if (task.dueDate) {
-      const today = new Date();
-      const dueDate = new Date(task.dueDate);
-      const isToday =
-        dueDate.getFullYear() === today.getFullYear() &&
-        dueDate.getMonth() === today.getMonth() &&
-        dueDate.getDate() === today.getDate();
-      if (!isToday) return false;
-    }
 
     if (selectedAnchorId) {
       return task.anchors?.some((a) => a.id === selectedAnchorId);
@@ -34,13 +26,12 @@ export default function TodayPage() {
   return (
     <div className="px-4 py-6">
       <div className="mb-4">
-        <h1 className="text-2xl font-bold text-text-primary">Today</h1>
+        <div className="flex items-center gap-2">
+          <Inbox className="h-6 w-6 text-text-secondary" />
+          <h1 className="text-2xl font-bold text-text-primary">Inbox</h1>
+        </div>
         <p className="text-sm text-text-secondary mt-1">
-          {new Date().toLocaleDateString('en-US', {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric',
-          })}
+          Tasks without a due date
         </p>
       </div>
 
@@ -54,9 +45,12 @@ export default function TodayPage() {
       </div>
 
       <TaskList
-        tasks={todayTasks}
+        tasks={inboxTasks}
         onToggle={completeTask}
         loading={loading}
+        emptyIcon="📥"
+        emptyTitle="Inbox is empty"
+        emptyMessage="Tasks without due dates will appear here"
       />
     </div>
   );
