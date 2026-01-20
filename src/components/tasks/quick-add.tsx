@@ -1,16 +1,17 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Calendar, Clock, Tag } from 'lucide-react';
+import { Calendar, Tag } from 'lucide-react';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils/cn';
+import { taskEvents } from '@/lib/events';
 
 interface QuickAddProps {
   open: boolean;
   onClose: () => void;
-  onAdd?: (title: string, options?: { timeEstimate?: number }) => void;
+  onAdd?: () => void;
 }
 
 const timeOptions = [
@@ -51,10 +52,11 @@ export function QuickAdd({ open, onClose, onAdd }: QuickAddProps) {
       });
 
       if (response.ok) {
-        onAdd?.(title.trim(), { timeEstimate: timeEstimate ?? undefined });
         setTitle('');
         setTimeEstimate(null);
         onClose();
+        taskEvents.emit();
+        onAdd?.();
       }
     } finally {
       setLoading(false);
