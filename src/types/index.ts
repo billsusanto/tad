@@ -2,6 +2,13 @@ import type { Task, Anchor, User, Streak, UserSettings } from '@/lib/db/schema';
 
 export type { Task, Anchor, User, Streak, UserSettings };
 
+export type {
+  StreakData,
+  WeeklyDayStatus,
+  ContributionDay,
+  StreakTheme,
+} from '@/lib/utils/streak';
+
 export type TaskStatus = 'pending' | 'completed' | 'archived';
 
 export type TaskWithAnchors = Task & {
