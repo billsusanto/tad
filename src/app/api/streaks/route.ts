@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { getDb } from '@/lib/db';
-import { streaks } from '@/lib/db/schema';
-import { eq, and, gte, desc } from 'drizzle-orm';
+import { streaks, tasks } from '@/lib/db/schema';
+import { eq, and, gte, lt, desc, count } from 'drizzle-orm';
 import { calculateStreakData } from '@/lib/utils/streak';
+import { getTodayUTC, addDaysUTC } from '@/lib/utils/date';
 
 export async function GET() {
   try {
@@ -29,7 +30,27 @@ export async function GET() {
       )
       .orderBy(desc(streaks.date));
 
-    const streakData = calculateStreakData(streakRecords);
+    const today = getTodayUTC();
+    const tomorrow = addDaysUTC(today, 1);
+    
+    const [todayTaskCount] = await db
+      .select({ count: count() })
+      .from(tasks)
+      .where(and(
+        eq(tasks.userId, session.user.id),
+        gte(tasks.createdAt, today),
+        lt(tasks.createdAt, tomorrow)
+      ));
+
+    const enrichedRecords = streakRecords.map(record => {
+      const recordDate = new Date(record.date);
+      if (recordDate.getTime() === today.getTime()) {
+        return { ...record, totalTasks: todayTaskCount?.count ?? record.totalTasks };
+      }
+      return record;
+    });
+
+    const streakData = calculateStreakData(enrichedRecords);
 
     return NextResponse.json({
       ...streakData,

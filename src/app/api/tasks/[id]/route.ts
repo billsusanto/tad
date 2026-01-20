@@ -2,33 +2,39 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { getDb } from '@/lib/db';
 import { tasks, streaks } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, gte, lt } from 'drizzle-orm';
+import { getTodayUTC, addDaysUTC } from '@/lib/utils/date';
 
-async function updateStreakRecord(userId: string, increment: number) {
+async function updateStreakRecord(userId: string, completedIncrement: number) {
   const db = getDb();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = getTodayUTC();
+  const tomorrow = addDaysUTC(today, 1);
 
-  const existingStreak = await db
+  const [existingStreak] = await db
     .select()
     .from(streaks)
-    .where(and(eq(streaks.userId, userId), eq(streaks.date, today)))
+    .where(and(
+      eq(streaks.userId, userId), 
+      gte(streaks.date, today),
+      lt(streaks.date, tomorrow)
+    ))
     .limit(1);
 
-  if (existingStreak.length > 0) {
-    const newCount = Math.max(0, existingStreak[0].tasksCompleted + increment);
+  if (existingStreak) {
+    const newCompleted = Math.max(0, existingStreak.tasksCompleted + completedIncrement);
     await db
       .update(streaks)
       .set({
-        tasksCompleted: newCount,
-        goalMet: newCount > 0,
+        tasksCompleted: newCompleted,
+        goalMet: newCompleted > 0,
       })
-      .where(eq(streaks.id, existingStreak[0].id));
-  } else if (increment > 0) {
+      .where(eq(streaks.id, existingStreak.id));
+  } else if (completedIncrement > 0) {
     await db.insert(streaks).values({
       userId,
       date: today,
-      tasksCompleted: increment,
+      tasksCompleted: completedIncrement,
+      totalTasks: 1,
       goalMet: true,
     });
   }

@@ -137,6 +137,7 @@ export const streaks = pgTable(
       .notNull(),
     date: timestamp('date', { mode: 'date' }).notNull(),
     tasksCompleted: integer('tasks_completed').default(0).notNull(),
+    totalTasks: integer('total_tasks').default(0).notNull(),
     goalMet: boolean('goal_met').default(false).notNull(),
   },
   (table) => [index('streaks_user_id_date_idx').on(table.userId, table.date)]

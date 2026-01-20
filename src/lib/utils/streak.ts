@@ -1,4 +1,12 @@
 import type { Streak } from '@/lib/db/schema';
+import { 
+  getTodayUTC, 
+  toUTCMidnight, 
+  isSameDayUTC, 
+  addDaysUTC, 
+  getStartOfWeekUTC,
+  getDayOfWeekUTC 
+} from './date';
 
 export interface StreakData {
   currentStreak: number;
@@ -32,34 +40,6 @@ export const STREAK_THEMES: Record<StreakTheme, { color: string; name: string }>
   purple: { color: '#a855f7', name: 'Purple' },
 };
 
-function startOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function isSameDay(date1: Date, date2: Date): boolean {
-  return startOfDay(date1).getTime() === startOfDay(date2).getTime();
-}
-
-function addDays(date: Date, days: number): Date {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  return d;
-}
-
-function getDayOfWeek(date: Date): number {
-  const day = date.getDay();
-  return day === 0 ? 6 : day - 1;
-}
-
-function getStartOfWeek(date: Date): Date {
-  const d = startOfDay(date);
-  const dayOfWeek = getDayOfWeek(d);
-  d.setDate(d.getDate() - dayOfWeek);
-  return d;
-}
-
 export function calculateCurrentStreak(streaks: Streak[]): number {
   if (streaks.length === 0) return 0;
 
@@ -67,30 +47,30 @@ export function calculateCurrentStreak(streaks: Streak[]): number {
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
-  const today = startOfDay(new Date());
-  const yesterday = addDays(today, -1);
+  const today = getTodayUTC();
+  const yesterday = addDaysUTC(today, -1);
 
   let streak = 0;
   let expectedDate = today;
 
   for (const record of sortedStreaks) {
-    const recordDate = startOfDay(new Date(record.date));
+    const recordDate = toUTCMidnight(new Date(record.date));
 
     if (record.tasksCompleted === 0) {
-      if (isSameDay(recordDate, today)) {
+      if (isSameDayUTC(recordDate, today)) {
         expectedDate = yesterday;
         continue;
       }
       break;
     }
 
-    if (isSameDay(recordDate, expectedDate)) {
+    if (isSameDayUTC(recordDate, expectedDate)) {
       streak++;
-      expectedDate = addDays(expectedDate, -1);
-    } else if (isSameDay(recordDate, addDays(expectedDate, -1))) {
+      expectedDate = addDaysUTC(expectedDate, -1);
+    } else if (isSameDayUTC(recordDate, addDaysUTC(expectedDate, -1))) {
       expectedDate = recordDate;
       streak++;
-      expectedDate = addDays(expectedDate, -1);
+      expectedDate = addDaysUTC(expectedDate, -1);
     } else {
       break;
     }
@@ -102,16 +82,16 @@ export function calculateCurrentStreak(streaks: Streak[]): number {
 export function calculateConsistencyRate(streaks: Streak[], days: number = 7): number {
   if (streaks.length === 0) return 0;
 
-  const today = startOfDay(new Date());
-  const startDate = addDays(today, -(days - 1));
+  const today = getTodayUTC();
+  const startDate = addDaysUTC(today, -(days - 1));
 
   let daysWithCompletions = 0;
 
   for (let i = 0; i < days; i++) {
-    const checkDate = addDays(startDate, i);
+    const checkDate = addDaysUTC(startDate, i);
     const hasCompletion = streaks.some(
       (s) =>
-        isSameDay(new Date(s.date), checkDate) && s.tasksCompleted > 0
+        isSameDayUTC(new Date(s.date), checkDate) && s.tasksCompleted > 0
     );
     if (hasCompletion) daysWithCompletions++;
   }
@@ -124,19 +104,19 @@ export function isOnFire(consistencyRate: number): boolean {
 }
 
 export function getWeeklyProgress(streaks: Streak[]): WeeklyDayStatus[] {
-  const today = startOfDay(new Date());
-  const startOfWeekDate = getStartOfWeek(today);
+  const today = getTodayUTC();
+  const startOfWeekDate = getStartOfWeekUTC(today);
   const result: WeeklyDayStatus[] = [];
 
   for (let i = 0; i < 7; i++) {
-    const date = addDays(startOfWeekDate, i);
-    const streakRecord = streaks.find((s) => isSameDay(new Date(s.date), date));
+    const date = addDaysUTC(startOfWeekDate, i);
+    const streakRecord = streaks.find((s) => isSameDayUTC(new Date(s.date), date));
     const tasksCount = streakRecord?.tasksCompleted ?? 0;
 
     result.push({
       date,
       completed: tasksCount > 0,
-      isToday: isSameDay(date, today),
+      isToday: isSameDayUTC(date, today),
       tasksCount,
     });
   }
@@ -148,28 +128,27 @@ export function getContributionData(
   streaks: Streak[],
   weeks: number = 12
 ): ContributionDay[] {
-  const today = startOfDay(new Date());
+  const today = getTodayUTC();
   const totalDays = weeks * 7;
-  const startDate = addDays(today, -(totalDays - 1));
+  const startDate = addDaysUTC(today, -(totalDays - 1));
   const result: ContributionDay[] = [];
 
-  const maxCount = Math.max(...streaks.map((s) => s.tasksCompleted), 1);
-
   for (let i = 0; i < totalDays; i++) {
-    const date = addDays(startDate, i);
-    const streakRecord = streaks.find((s) => isSameDay(new Date(s.date), date));
-    const count = streakRecord?.tasksCompleted ?? 0;
+    const date = addDaysUTC(startDate, i);
+    const streakRecord = streaks.find((s) => isSameDayUTC(new Date(s.date), date));
+    const completed = streakRecord?.tasksCompleted ?? 0;
+    const total = streakRecord?.totalTasks ?? 0;
 
     let level: 0 | 1 | 2 | 3 | 4 = 0;
-    if (count > 0) {
-      const ratio = count / maxCount;
+    if (completed > 0 && total > 0) {
+      const ratio = completed / total;
       if (ratio <= 0.25) level = 1;
       else if (ratio <= 0.5) level = 2;
       else if (ratio <= 0.75) level = 3;
       else level = 4;
     }
 
-    result.push({ date, count, level });
+    result.push({ date, count: completed, level });
   }
 
   return result;
@@ -207,5 +186,5 @@ export function getDayName(date: Date, short: boolean = true): string {
   const days = short
     ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
     : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  return days[getDayOfWeek(date)];
+  return days[getDayOfWeekUTC(date)];
 }
