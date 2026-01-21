@@ -22,34 +22,55 @@ export function StreakCounter({
     ? 'text-success'
     : 'text-text-secondary';
 
+  const showPulseRing = currentStreak >= 7;
+  const showFireGradient = isOnFire;
+
   return (
     <div
       className={cn(
-        'flex items-center justify-between p-4 bg-bg-secondary rounded-lg border border-border-default',
+        'relative p-6 rounded-2xl bg-gradient-card border border-border-default/50',
+        showFireGradient && 'overflow-hidden',
         className
       )}
     >
-      <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-12 h-12 bg-bg-tertiary rounded-lg">
-          <span className="text-2xl" role="img" aria-label={isOnFire ? 'Fire emoji' : 'Calendar emoji'}>
-            {isOnFire ? '🔥' : '📅'}
-          </span>
-        </div>
-        <div>
-          <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-bold text-text-primary">{currentStreak}</span>
-            <span className="text-sm text-text-secondary">day{currentStreak !== 1 ? 's' : ''}</span>
+      {showFireGradient && (
+        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-transparent to-red-500/10 pointer-events-none" />
+      )}
+      <div className="relative flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div
+            className={cn(
+              'flex items-center justify-center w-16 h-16 bg-bg-tertiary rounded-2xl',
+              showPulseRing && 'animate-pulse-ring'
+            )}
+          >
+            <span className="text-3xl" role="img" aria-label={isOnFire ? 'Fire emoji' : 'Calendar emoji'}>
+              {isOnFire ? '🔥' : '📅'}
+            </span>
           </div>
-          <div className="text-sm text-text-secondary">consistency streak</div>
+          <div>
+            <div className="flex items-baseline gap-1.5">
+              <span
+                className={cn(
+                  'text-5xl font-bold tracking-tight',
+                  showFireGradient ? 'text-gradient-fire' : 'text-text-primary'
+                )}
+              >
+                {currentStreak}
+              </span>
+              <span className="text-base text-text-secondary">day{currentStreak !== 1 ? 's' : ''}</span>
+            </div>
+            <div className="text-sm text-text-secondary mt-1">consistency streak</div>
+          </div>
         </div>
-      </div>
 
-      <div className="text-right">
-        <div className={cn('text-lg font-semibold', statusColor)}>
-          {statusText}
-        </div>
-        <div className="text-sm text-text-secondary">
-          {consistencyRate}% this week
+        <div className="text-right">
+          <div className={cn('text-lg font-semibold', statusColor)}>
+            {statusText}
+          </div>
+          <div className="text-sm text-text-secondary">
+            {consistencyRate}% this week
+          </div>
         </div>
       </div>
     </div>
