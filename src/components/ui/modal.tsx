@@ -100,14 +100,17 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
         <div
           ref={contentRef}
           className={cn(
-            'relative w-full sm:max-w-md bg-bg-secondary rounded-t-2xl sm:rounded-2xl shadow-xl',
+            'relative w-full sm:max-w-md bg-bg-secondary/95 backdrop-blur-xl rounded-t-3xl sm:rounded-3xl shadow-2xl border border-border-default/50',
             'animate-in fade-in-0 slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200',
             'max-h-[90vh] overflow-hidden flex flex-col',
             className
           )}
         >
+          <div className="sm:hidden flex justify-center pt-3 pb-1">
+            <div className="w-10 h-1 bg-text-muted/30 rounded-full" />
+          </div>
           {title && (
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border-default">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border-default/50">
               <h2 id={titleId} className="text-lg font-semibold text-text-primary">{title}</h2>
               <button
                 onClick={onClose}

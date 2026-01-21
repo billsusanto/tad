@@ -30,9 +30,9 @@ export function TaskItem({ task, onToggle }: TaskItemProps) {
   return (
     <div
       className={cn(
-        'flex items-start gap-3 p-4 rounded-xl bg-bg-secondary border border-border-default',
-        'transition-all duration-200',
-        'hover:border-border-hover',
+        'flex items-start gap-3 p-4 rounded-2xl bg-bg-secondary/80 backdrop-blur-sm shadow-card',
+        'transition-all duration-300',
+        'hover:shadow-card-hover hover:-translate-y-0.5',
         isCompleted && 'opacity-60'
       )}
     >
@@ -47,9 +47,9 @@ export function TaskItem({ task, onToggle }: TaskItemProps) {
       >
         <span
           className={cn(
-            'h-5 w-5 rounded border-2 flex items-center justify-center transition-all duration-150',
+            'h-6 w-6 rounded-lg border-2 flex items-center justify-center transition-all duration-150',
             isCompleted
-              ? 'bg-brand-primary border-brand-primary'
+              ? 'bg-brand-primary border-brand-primary glow-brand'
               : 'bg-transparent border-border-default group-hover:border-brand-primary/50'
           )}
         >
@@ -70,7 +70,7 @@ export function TaskItem({ task, onToggle }: TaskItemProps) {
       <div className="flex-1 min-w-0">
         <p
           className={cn(
-            'text-sm font-medium text-text-primary',
+            'text-[15px] font-medium leading-snug text-text-primary',
             isCompleted && 'line-through text-text-secondary'
           )}
         >
@@ -78,11 +78,11 @@ export function TaskItem({ task, onToggle }: TaskItemProps) {
         </p>
         
         {hasMetadata && (
-          <div className="flex flex-wrap items-center gap-2 mt-1.5">
+          <div className="flex flex-wrap items-center gap-2 mt-2.5">
             {task.anchors?.map((anchor) => (
               <span
                 key={anchor.id}
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs"
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs"
                 style={{ backgroundColor: anchor.color + '20', color: anchor.color }}
               >
                 <span>{anchor.icon}</span>
@@ -91,7 +91,7 @@ export function TaskItem({ task, onToggle }: TaskItemProps) {
             ))}
             {task.priority < 4 && (
               <span
-                className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold"
+                className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold"
                 style={{ 
                   backgroundColor: priorityConfig[task.priority].color + '20',
                   color: priorityConfig[task.priority].color 
