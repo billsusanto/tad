@@ -3,9 +3,9 @@ import { auth } from '@/lib/auth/config';
 import { getDb } from '@/lib/db';
 import { tasks, streaks } from '@/lib/db/schema';
 import { eq, and, gte, lt } from 'drizzle-orm';
-import { getTodayUTC, addDaysUTC } from '@/lib/utils/date';
+import { getTodayUTC, addDaysUTC, isSameDayUTC, toUTCMidnight } from '@/lib/utils/date';
 
-async function updateStreakRecord(userId: string, completedIncrement: number) {
+async function ensureTodayStreak(userId: string) {
   const db = getDb();
   const today = getTodayUTC();
   const tomorrow = addDaysUTC(today, 1);
@@ -14,7 +14,37 @@ async function updateStreakRecord(userId: string, completedIncrement: number) {
     .select()
     .from(streaks)
     .where(and(
-      eq(streaks.userId, userId), 
+      eq(streaks.userId, userId),
+      gte(streaks.date, today),
+      lt(streaks.date, tomorrow)
+    ))
+    .limit(1);
+
+  if (!existingStreak) {
+    await db.insert(streaks).values({
+      userId,
+      date: today,
+      tasksCompleted: 0,
+      totalTasks: 0,
+      goalMet: false,
+    });
+  }
+
+  return existingStreak || { totalTasks: 0, tasksCompleted: 0 };
+}
+
+async function updateStreakRecord(userId: string, completedIncrement: number) {
+  const db = getDb();
+  const today = getTodayUTC();
+  const tomorrow = addDaysUTC(today, 1);
+
+  await ensureTodayStreak(userId);
+
+  const [existingStreak] = await db
+    .select()
+    .from(streaks)
+    .where(and(
+      eq(streaks.userId, userId),
       gte(streaks.date, today),
       lt(streaks.date, tomorrow)
     ))
@@ -29,13 +59,37 @@ async function updateStreakRecord(userId: string, completedIncrement: number) {
         goalMet: newCompleted > 0,
       })
       .where(eq(streaks.id, existingStreak.id));
-  } else if (completedIncrement > 0) {
+  }
+}
+
+async function adjustTotalTasksForDate(userId: string, date: Date, increment: number) {
+  const db = getDb();
+  const targetDate = toUTCMidnight(date);
+  const nextDay = addDaysUTC(targetDate, 1);
+
+  const [existingStreak] = await db
+    .select()
+    .from(streaks)
+    .where(and(
+      eq(streaks.userId, userId),
+      gte(streaks.date, targetDate),
+      lt(streaks.date, nextDay)
+    ))
+    .limit(1);
+
+  if (existingStreak) {
+    const newTotal = Math.max(0, existingStreak.totalTasks + increment);
+    await db
+      .update(streaks)
+      .set({ totalTasks: newTotal })
+      .where(eq(streaks.id, existingStreak.id));
+  } else if (increment > 0) {
     await db.insert(streaks).values({
       userId,
-      date: today,
-      tasksCompleted: completedIncrement,
-      totalTasks: 1,
-      goalMet: true,
+      date: targetDate,
+      tasksCompleted: 0,
+      totalTasks: increment,
+      goalMet: false,
     });
   }
 }
@@ -129,6 +183,21 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         await updateStreakRecord(session.user.id, 1);
       } else if (existingTask.status === 'completed' && status !== 'completed') {
         await updateStreakRecord(session.user.id, -1);
+      }
+    }
+
+    const today = getTodayUTC();
+    if (dueDate !== undefined && existingTask.status === 'pending') {
+      const oldDueDate = existingTask.dueDate;
+      const newDueDate = dueDate ? new Date(dueDate) : null;
+      
+      const oldWasToday = !oldDueDate || isSameDayUTC(oldDueDate, today);
+      const newIsToday = !newDueDate || isSameDayUTC(newDueDate, today);
+      
+      if (oldWasToday && !newIsToday) {
+        await adjustTotalTasksForDate(session.user.id, today, -1);
+      } else if (!oldWasToday && newIsToday) {
+        await adjustTotalTasksForDate(session.user.id, today, 1);
       }
     }
 
