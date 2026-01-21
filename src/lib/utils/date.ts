@@ -42,3 +42,14 @@ export function isToday(date: Date | string | null): boolean {
     d.getDate() === today.getDate()
   );
 }
+
+export function isTodayUTC(date: Date | string | null): boolean {
+  if (!date) return false;
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const today = getTodayUTC();
+  return isSameDayUTC(d, today);
+}
+
+export function getUTCDateString(date: Date): string {
+  return date.toISOString().split('T')[0];
+}

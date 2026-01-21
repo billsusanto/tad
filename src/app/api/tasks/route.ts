@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth/config';
 import { getDb } from '@/lib/db';
 import { tasks, streaks, taskAnchors, anchors } from '@/lib/db/schema';
 import { eq, desc, and, gte, lt, inArray } from 'drizzle-orm';
-import { getTodayUTC, addDaysUTC } from '@/lib/utils/date';
+import { getTodayUTC, addDaysUTC, isSameDayUTC } from '@/lib/utils/date';
 
 export async function GET() {
   try {
@@ -124,29 +124,34 @@ export async function POST(request: NextRequest) {
     const today = getTodayUTC();
     const tomorrow = addDaysUTC(today, 1);
     
-    const [existingStreak] = await db
-      .select()
-      .from(streaks)
-      .where(and(
-        eq(streaks.userId, session.user.id), 
-        gte(streaks.date, today),
-        lt(streaks.date, tomorrow)
-      ))
-      .limit(1);
+    const taskDueDate = dueDate ? new Date(dueDate) : null;
+    const isDueToday = !taskDueDate || isSameDayUTC(taskDueDate, today);
+    
+    if (isDueToday) {
+      const [existingStreak] = await db
+        .select()
+        .from(streaks)
+        .where(and(
+          eq(streaks.userId, session.user.id), 
+          gte(streaks.date, today),
+          lt(streaks.date, tomorrow)
+        ))
+        .limit(1);
 
-    if (existingStreak) {
-      await db
-        .update(streaks)
-        .set({ totalTasks: existingStreak.totalTasks + 1 })
-        .where(eq(streaks.id, existingStreak.id));
-    } else {
-      await db.insert(streaks).values({
-        userId: session.user.id,
-        date: today,
-        tasksCompleted: 0,
-        totalTasks: 1,
-        goalMet: false,
-      });
+      if (existingStreak) {
+        await db
+          .update(streaks)
+          .set({ totalTasks: existingStreak.totalTasks + 1 })
+          .where(eq(streaks.id, existingStreak.id));
+      } else {
+        await db.insert(streaks).values({
+          userId: session.user.id,
+          date: today,
+          tasksCompleted: 0,
+          totalTasks: 1,
+          goalMet: false,
+        });
+      }
     }
 
     return NextResponse.json({ ...newTask, anchors: taskAnchorList }, { status: 201 });
